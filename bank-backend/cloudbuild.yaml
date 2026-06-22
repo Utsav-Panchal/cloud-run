@@ -1,0 +1,31 @@
+steps:
+  # 1. Build the backend container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
+      - './bank-backend'
+
+  # 2. Push the backend image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
+
+  # 3. Deploy backend to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'utsav-bank-backend'
+      - '--image'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

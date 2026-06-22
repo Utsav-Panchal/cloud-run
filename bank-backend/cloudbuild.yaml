@@ -1,31 +1,42 @@
+substitutions:
+  _REGION: northamerica-northeast2
+  _REPO: utsav-repo
+  _SERVICE: utsav-bank-backend
+
 steps:
-  # 1. Build the backend container image
-  - name: 'gcr.io/cloud-builders/docker'
+  #Build the backend container image
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
     args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
-      - './bank-backend'
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - bank-backend
 
-  # 2. Push the backend image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
+  #Push the image to Artifact Registry
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
     args:
-      - 'push'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
 
-  # 3. Deploy backend to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
+  #Deploy the image to Cloud Run
+  - id: deploy-cloudrun
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'utsav-bank-backend'
-      - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-backend:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --service-account=79505229087-compute@developer.gserviceaccount.com
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
 
 options:
   logging: CLOUD_LOGGING_ONLY

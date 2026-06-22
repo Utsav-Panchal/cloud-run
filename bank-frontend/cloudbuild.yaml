@@ -1,46 +1,45 @@
+substitutions:
+  _REGION: northamerica-northeast2
+  _REPO: utsav-repo
+  _SERVICE: utsav-bank-frontend
+  _BACKEND_URL: ""   # set this in the trigger (your backend's Cloud Run URL)
+
 steps:
-  # 0. Fetch the backend Cloud Run URL dynamically
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'get-backend-url'
-    entrypoint: 'bash'
+  #Build the frontend image, baking in the backend URL
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
     args:
-      - '-c'
-      - |
-        BACKEND_URL=$(gcloud run services describe utsav-bank-backend --region us-central1 --format='value(status.url)')
-        echo "Found backend URL: $$BACKEND_URL"
-        echo "$$BACKEND_URL" > /workspace/backend_url.txt
+      - build
+      - --build-arg
+      - REACT_APP_API_URL=${_BACKEND_URL}/api/v1
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - bank-frontend
 
-  # 1. Build the frontend container image (injecting the build argument)
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
+  #Push the image to Artifact Registry
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
     args:
-      - '-c'
-      - |
-        BACKEND_URL=$(cat /workspace/backend_url.txt)
-        docker build \
-          --build-arg REACT_APP_API_URL=$$_BACKEND_URL/api/v1 \
-          -t us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-frontend:$COMMIT_SHA \
-          ./bank-frontend
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
 
-  # 2. Push frontend image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
+  #Deploy the image to Cloud Run
+  - id: deploy-cloudrun
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
     args:
-      - 'push'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-frontend:$COMMIT_SHA'
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --service-account=79505229087-compute@developer.gserviceaccount.com
 
-  # 3. Deploy frontend to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'utsav-bank-frontend'
-      - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/utsav-repo/utsav-bank-frontend:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
 
 options:
   logging: CLOUD_LOGGING_ONLY

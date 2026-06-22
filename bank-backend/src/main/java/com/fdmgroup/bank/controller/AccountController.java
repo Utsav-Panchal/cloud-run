@@ -49,6 +49,9 @@ public class AccountController
 	public ResponseEntity<List<AccountDTO>> getAccounts()
 	{
 		System.out.println("Account Controller: Fetching all accounts");
+		System.out.println("Account Controller: Fetching all accounts 2");
+		System.out.println("Account Controller: Fetching all accounts 3");
+		System.out.println("Account Controller: Fetching all accounts 4");
 		List<AccountDTO> accounts = service.getAccounts().stream().map(AccountDTO::new).toList();
 		return ResponseEntity.ok(accounts);
 	}

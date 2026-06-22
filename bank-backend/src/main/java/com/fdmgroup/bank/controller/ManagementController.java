@@ -3,12 +3,7 @@ package com.fdmgroup.bank.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fdmgroup.bank.model.Account;
 import com.fdmgroup.bank.model.AccountDTO;
@@ -20,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 @RestController
 @RequestMapping("/api/v1/management")
+@CrossOrigin(origins = "https://utsav-bank-frontend-79505229087.us-central1.run.app", allowedHeaders = "*")
 public class ManagementController
 {
 	private IManagementService managementService;
